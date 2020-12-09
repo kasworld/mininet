@@ -13,3 +13,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+*.wasm
+core
+.*~
+*~
+*.map
+bin/*
+
+*_gen.go 
+*_gen_test.go
