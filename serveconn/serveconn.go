@@ -10,24 +10,3 @@
 // limitations under the License.
 
 package serveconn
-
-import (
-	"context"
-	"fmt"
-	"net"
-	"time"
-
-	"github.com/kasworld/massecho/protocol_me/me_authorize"
-	"github.com/kasworld/massecho/protocol_me/me_const"
-	"github.com/kasworld/massecho/protocol_me/me_idcmd"
-	"github.com/kasworld/massecho/protocol_me/me_idnoti"
-	"github.com/kasworld/massecho/protocol_me/me_looptcp"
-	"github.com/kasworld/massecho/protocol_me/me_loopwsgorilla"
-	"github.com/kasworld/massecho/protocol_me/me_packet"
-	"github.com/kasworld/massecho/protocol_me/me_statapierror"
-	"github.com/kasworld/massecho/protocol_me/me_statnoti"
-	"github.com/kasworld/massecho/protocol_me/me_statserveapi"
-	"golang.org/x/net/websocket"
-)
-
-type CounterI interface {
