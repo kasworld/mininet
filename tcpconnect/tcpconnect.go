@@ -9,7 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package minitcp
+package tcpconnect
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/kasworld/mininet/packet"
+	"github.com/kasworld/mininet/tcploop"
 )
 
 type Connection struct {
@@ -78,7 +79,7 @@ func (tc *Connection) Run(mainctx context.Context) error {
 	sendRecvWaitGroup.Add(2)
 	go func() {
 		defer sendRecvWaitGroup.Done()
-		err := RecvLoop(
+		err := tcploop.RecvLoop(
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,
@@ -90,7 +91,7 @@ func (tc *Connection) Run(mainctx context.Context) error {
 	}()
 	go func() {
 		defer sendRecvWaitGroup.Done()
-		err := SendLoop(
+		err := tcploop.SendLoop(
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,
@@ -112,62 +113,4 @@ func (tc *Connection) EnqueueSendPacket(pk *packet.Packet) error {
 	default:
 		return fmt.Errorf("Send channel full %v", tc)
 	}
-}
-
-func SendLoop(sendRecvCtx context.Context, SendRecvStop func(), tcpConn *net.TCPConn,
-	timeOut time.Duration,
-	SendCh chan *packet.Packet,
-	handleSentPacketFn func(pk *packet.Packet) error,
-) error {
-
-	defer SendRecvStop()
-	var err error
-loop:
-	for {
-		select {
-		case <-sendRecvCtx.Done():
-			break loop
-		case pk := <-SendCh:
-			if err = tcpConn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
-				break loop
-			}
-			if err = packet.WritePacket(tcpConn, pk); err != nil {
-				break loop
-			}
-			if err = handleSentPacketFn(pk); err != nil {
-				break loop
-			}
-		}
-	}
-	return err
-}
-
-func RecvLoop(sendRecvCtx context.Context, SendRecvStop func(), tcpConn *net.TCPConn,
-	timeOut time.Duration,
-	HandleRecvPacketFn func(pk *packet.Packet) error,
-) error {
-
-	defer SendRecvStop()
-
-	var err error
-loop:
-	for {
-		select {
-		case <-sendRecvCtx.Done():
-			return nil
-
-		default:
-			if err = tcpConn.SetReadDeadline(time.Now().Add(timeOut)); err != nil {
-				break loop
-			}
-			pk, err := packet.ReadPacket(tcpConn)
-			if err != nil {
-				return err
-			}
-			if err = HandleRecvPacketFn(pk); err != nil {
-				break loop
-			}
-		}
-	}
-	return err
 }

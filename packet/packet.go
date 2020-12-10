@@ -50,18 +50,18 @@ func ReadPacket(conn io.Reader) (*Packet, error) {
 		}
 		recvLen += n
 	}
-	header := header.MakeHeaderFromBytes(readBuffer)
+	hd := header.MakeHeaderFromBytes(readBuffer)
 	recvLen = 0
-	toRead = int(header.BodyLen)
+	toRead = int(hd.BodyLen)
 	readBuffer = make([]byte, toRead)
 	for recvLen < toRead {
 		n, err := conn.Read(readBuffer[recvLen:toRead])
 		if err != nil {
-			return &Packet{header, nil}, err
+			return &Packet{hd, nil}, err
 		}
 		recvLen += n
 	}
-	return &Packet{header, readBuffer}, nil
+	return &Packet{hd, readBuffer}, nil
 }
 
 // WritePacket write packet to io.Writer

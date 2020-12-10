@@ -27,43 +27,15 @@ const (
 	MaxPacketLen = HeaderLen + MaxBodyLen
 )
 
-// FlowType packet flow type
-type FlowType byte
-
-const (
-	// make uninitalized packet error
-	invalid FlowType = iota
-	// Request for request packet (response packet expected)
-	Request
-	// Response is reply of request packet
-	Response
-	// Notification is just send and forget packet
-	Notification
-)
-
-var _flowTypeStr = map[FlowType]string{
-	invalid:      "invalid",
-	Request:      "Request",
-	Response:     "Response",
-	Notification: "Notification",
-}
-
-func (e FlowType) String() string {
-	if s, exist := _flowTypeStr[e]; exist {
-		return s
-	}
-	return fmt.Sprintf("FlowType%d", byte(e))
-}
-
 // Header is fixed size header of packet
 type Header struct {
-	BodyLen     uint32   // set after marshal body
-	PacketID    uint32   // unique id per packet (wrap around reuse)
-	CommandID   uint16   // application demux received packet
-	ResultCode  uint16   // for Response
-	FlowType    FlowType // flow control, Request, Response, Notification
-	MarshalType byte     // body marshal,compress type
-	ExtraData   uint16   // any data
+	BodyLen     uint32 // set after marshal body
+	PacketID    uint32 // unique id per packet (wrap around reuse)
+	CommandID   uint16 // application demux received packet
+	ResultCode  uint16 // for Response
+	FlowType    byte   // flow control, Request, Response, Notification
+	MarshalType byte   // body marshal,compress type
+	ExtraData   uint16 // any data
 }
 
 func (h Header) String() string {
@@ -79,7 +51,7 @@ func MakeHeaderFromBytes(buf []byte) Header {
 	h.PacketID = binary.LittleEndian.Uint32(buf[4:8])
 	h.CommandID = binary.LittleEndian.Uint16(buf[8:10])
 	h.ResultCode = binary.LittleEndian.Uint16(buf[10:12])
-	h.FlowType = FlowType(buf[12])
+	h.FlowType = byte(buf[12])
 	h.MarshalType = buf[13]
 	h.ExtraData = binary.LittleEndian.Uint16(buf[14:16])
 	return h
