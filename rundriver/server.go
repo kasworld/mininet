@@ -228,7 +228,6 @@ func (svr *Server) serveTCPClient(ctx context.Context, conn *net.TCPConn) {
 ///////////////////////////////////////////////////////////////
 
 func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
-	fmt.Printf("Recv %v\n", pk.Header)
 	svr.RecvStat.Inc()
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
@@ -262,7 +261,6 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 	return nil
 }
 func (svr *Server) handleSentPacketFn(me interface{}, pk *packet.Packet) error {
-	fmt.Printf("Send %v\n", pk.Header)
 	svr.SendStat.Inc()
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:

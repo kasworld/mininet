@@ -220,25 +220,16 @@ func (app *App) reqEcho() error {
 }
 
 func (app *App) handleSentPacket(pk *packet.Packet) error {
-	fmt.Printf("Send %v\n", pk.Header)
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
 		return fmt.Errorf("Invalid packet type %v", pk.Header)
 
 	case flowtype.Request:
-		// process response
-		if rspfn, err := app.pid2recv.GetRspFn(pk.Header.PacketID); err != nil {
-			fmt.Printf("HandleRsp %v %v\n", err, pk.Header)
-			return err
-		} else {
-			return rspfn(pk)
-		}
 	}
 	return nil
 }
 
 func (app *App) handleRecvPacket(pk *packet.Packet) error {
-	fmt.Printf("Recv %v\n", pk.Header)
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
 		return fmt.Errorf("Invalid packet type %v", pk.Header)

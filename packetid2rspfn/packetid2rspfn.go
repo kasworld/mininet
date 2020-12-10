@@ -40,11 +40,10 @@ func (p2r *PID2RspFn) NewPID(fn HandleRspFn) uint32 {
 }
 func (p2r *PID2RspFn) GetRspFn(pid uint32) (HandleRspFn, error) {
 	p2r.mutex.Lock()
+	defer p2r.mutex.Unlock()
 	if recvfn, exist := p2r.pid2recvfn[pid]; exist {
 		delete(p2r.pid2recvfn, pid)
-		p2r.mutex.Unlock()
 		return recvfn, nil
 	}
-	p2r.mutex.Unlock()
-	return nil, fmt.Errorf("pid not found")
+	return nil, fmt.Errorf("pid not found %v", pid)
 }
