@@ -233,6 +233,30 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 	default:
 		return fmt.Errorf("Invalid packet type %v", pk.Header)
 	case flowtype.Request:
+		conn := me.(*serveconn.ServeConn)
+		fn := svr.DemuxReq2BytesAPIFnMap[pk.Header.CommandID]
+		hd, body, err := fn(me, pk)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return err
+		}
+		bodybytes, _, err := marshalBodyFn(body, nil)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return err
+		}
+		shd := hd
+		shd.FlowType = uint8(flowtype.Response)
+		shd.BodyLen = uint32(len(bodybytes))
+		spk := &packet.Packet{
+			Header: shd,
+			Body:   bodybytes,
+		}
+		if err := conn.EnqueueSendPacket(spk); err != nil {
+			fmt.Printf("End %v %v %v\n", conn, spk, err)
+			conn.Disconnect()
+			return fmt.Errorf("Send fail %v %v", conn, err)
+		}
 	}
 	return nil
 }
@@ -267,16 +291,16 @@ func unmarshal_ReqEcho(pk *packet.Packet) (interface{}, error) {
 func (svr *Server) bytesAPIFn_ReqInvalid(
 	me interface{}, pk *packet.Packet) (
 	header.Header, interface{}, error) {
-
 	return header.Header{}, nil, fmt.Errorf("invalid packet")
 }
 
 func (svr *Server) bytesAPIFn_ReqEcho(
 	me interface{}, pk *packet.Packet) (
 	header.Header, interface{}, error) {
+
 	robj, err := unmarshal_ReqEcho(pk)
 	if err != nil {
-		return pk.Header, nil, fmt.Errorf("Packet type miss match %v", pk.Body)
+		return pk.Header, nil, fmt.Errorf("unmarshal_ReqEcho %v", err)
 	}
 	recvBody, ok := robj.(*netobj.ReqEcho_data)
 	if !ok {

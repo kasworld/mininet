@@ -266,6 +266,7 @@ func (app *App) ReqWithRspFn(
 			CommandID: uint16(cmd),
 			PacketID:  pid,
 			FlowType:  uint8(flowtype.Request),
+			BodyLen:   uint32(len(bodybytes)),
 		},
 		Body: bodybytes,
 	}
