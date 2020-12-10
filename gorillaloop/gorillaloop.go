@@ -9,21 +9,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tcploop
+package gorillaloop
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/kasworld/mininet/packet"
 )
+
+func SendControl(
+	wsConn *websocket.Conn, mt int, PacketWriteTimeOut time.Duration) error {
+
+	return wsConn.WriteControl(mt, []byte{}, time.Now().Add(PacketWriteTimeOut))
+}
+
+func WritePacket(wsConn *websocket.Conn, pk *packet.Packet) error {
+	w, err := wsConn.NextWriter(websocket.BinaryMessage)
+	if err != nil {
+		return err
+	}
+	if err := packet.WritePacket(w, pk); err != nil {
+		return err
+	}
+	return w.Close()
+}
 
 func SendLoop(
 	sendRecvCtx context.Context,
 	SendRecvStop func(),
-	tcpConn *net.TCPConn,
-	timeOut time.Duration,
+	wsConn *websocket.Conn,
+	timeout time.Duration,
 	SendCh chan *packet.Packet,
 	handleSentPacketFn func(pk *packet.Packet) error,
 ) error {
@@ -34,12 +53,13 @@ loop:
 	for {
 		select {
 		case <-sendRecvCtx.Done():
+			err = SendControl(wsConn, websocket.CloseMessage, timeout)
 			break loop
 		case pk := <-SendCh:
-			if err = tcpConn.SetWriteDeadline(time.Now().Add(timeOut)); err != nil {
+			if err = wsConn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
 				break loop
 			}
-			if err = packet.WritePacket(tcpConn, pk); err != nil {
+			if err = WritePacket(wsConn, pk); err != nil {
 				break loop
 			}
 			if err = handleSentPacketFn(pk); err != nil {
@@ -53,32 +73,44 @@ loop:
 func RecvLoop(
 	sendRecvCtx context.Context,
 	SendRecvStop func(),
-	tcpConn *net.TCPConn,
-	timeOut time.Duration,
+	wsConn *websocket.Conn,
+	timeout time.Duration,
 	HandleRecvPacketFn func(pk *packet.Packet) error,
 ) error {
-
 	defer SendRecvStop()
-
 	var err error
 loop:
 	for {
 		select {
 		case <-sendRecvCtx.Done():
-			return nil
-
+			break loop
 		default:
-			if err = tcpConn.SetReadDeadline(time.Now().Add(timeOut)); err != nil {
+			if err = wsConn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
 				break loop
 			}
-			pk, err := packet.ReadPacket(tcpConn)
-			if err != nil {
-				return err
-			}
-			if err = HandleRecvPacketFn(pk); err != nil {
+			if pk, lerr := RecvPacket(wsConn); lerr != nil {
+				if operr, ok := lerr.(*net.OpError); ok && operr.Timeout() {
+					continue
+				}
+				err = lerr
 				break loop
+			} else {
+				if err = HandleRecvPacketFn(pk); err != nil {
+					break loop
+				}
 			}
 		}
 	}
 	return err
+}
+
+func RecvPacket(wsConn *websocket.Conn) (*packet.Packet, error) {
+	mt, rdata, err := wsConn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+	if mt != websocket.BinaryMessage {
+		return nil, fmt.Errorf("message not binary %v", mt)
+	}
+	return packet.Bytes2Packet(rdata)
 }

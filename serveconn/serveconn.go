@@ -17,6 +17,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/kasworld/mininet/gorillaloop"
 	"github.com/kasworld/mininet/packet"
 	"github.com/kasworld/mininet/tcploop"
 )
@@ -50,26 +52,42 @@ func (scb *ServeConn) Disconnect() {
 func (scb *ServeConn) GetConnData() interface{} {
 	return scb.connData
 }
+func (scb *ServeConn) EnqueueSendPacket(pk *packet.Packet) error {
+	select {
+	case scb.sendCh <- pk:
+		return nil
+	default:
+		return fmt.Errorf("Send channel full %v", scb)
+	}
+}
 
 func (scb *ServeConn) ServeTCP(
 	mainctx context.Context, conn *net.TCPConn,
 	readTimeoutSec, writeTimeoutSec time.Duration,
-	handleRecvPacketFn func(pk *packet.Packet) error,
-	handleSentPacketFn func(pk *packet.Packet) error,
+	handleRecvPacketFn func(me interface{}, pk *packet.Packet) error,
+	handleSentPacketFn func(me interface{}, pk *packet.Packet) error,
 ) error {
 	var returnerr error
 	sendRecvCtx, sendRecvCancel := context.WithCancel(mainctx)
 	scb.sendRecvStop = sendRecvCancel
 	go func() {
 		err := tcploop.RecvLoop(sendRecvCtx, scb.sendRecvStop, conn,
-			readTimeoutSec, handleRecvPacketFn)
+			readTimeoutSec,
+			func(pk *packet.Packet) error { // add connection info
+				return handleRecvPacketFn(scb, pk)
+			},
+		)
 		if err != nil {
 			returnerr = fmt.Errorf("end RecvLoop %v", err)
 		}
 	}()
 	go func() {
 		err := tcploop.SendLoop(sendRecvCtx, scb.sendRecvStop, conn,
-			writeTimeoutSec, scb.sendCh, handleSentPacketFn)
+			writeTimeoutSec, scb.sendCh,
+			func(pk *packet.Packet) error { // add connection info
+				return handleSentPacketFn(scb, pk)
+			},
+		)
 		if err != nil {
 			returnerr = fmt.Errorf("end SendLoop %v", err)
 		}
@@ -84,11 +102,43 @@ loop:
 	return returnerr
 }
 
-func (scb *ServeConn) EnqueueSendPacket(pk *packet.Packet) error {
-	select {
-	case scb.sendCh <- pk:
-		return nil
-	default:
-		return fmt.Errorf("Send channel full %v", scb)
+func (scb *ServeConn) StartServeWS(
+	mainctx context.Context, conn *websocket.Conn,
+	readTimeoutSec, writeTimeoutSec time.Duration,
+	handleRecvPacketFn func(me interface{}, pk *packet.Packet) error,
+	handleSentPacketFn func(me interface{}, pk *packet.Packet) error,
+) error {
+	var returnerr error
+	sendRecvCtx, sendRecvCancel := context.WithCancel(mainctx)
+	scb.sendRecvStop = sendRecvCancel
+	go func() {
+		err := gorillaloop.RecvLoop(sendRecvCtx, scb.sendRecvStop, conn,
+			readTimeoutSec,
+			func(pk *packet.Packet) error { // add connection info
+				return handleRecvPacketFn(scb, pk)
+			},
+		)
+		if err != nil {
+			returnerr = fmt.Errorf("end RecvLoop %v", err)
+		}
+	}()
+	go func() {
+		err := gorillaloop.SendLoop(sendRecvCtx, scb.sendRecvStop, conn,
+			writeTimeoutSec, scb.sendCh,
+			func(pk *packet.Packet) error { // add connection info
+				return handleSentPacketFn(scb, pk)
+			},
+		)
+		if err != nil {
+			returnerr = fmt.Errorf("end SendLoop %v", err)
+		}
+	}()
+loop:
+	for {
+		select {
+		case <-sendRecvCtx.Done():
+			break loop
+		}
 	}
+	return returnerr
 }
