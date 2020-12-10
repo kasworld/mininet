@@ -26,6 +26,7 @@ import (
 	"github.com/kasworld/argdefault"
 	"github.com/kasworld/mininet/connmanager"
 	"github.com/kasworld/mininet/enum/commandid"
+	"github.com/kasworld/mininet/enum/flowtype"
 	"github.com/kasworld/mininet/enum/resultcode"
 	"github.com/kasworld/mininet/header"
 	"github.com/kasworld/mininet/packet"
@@ -79,6 +80,8 @@ func NewServer(config *ServerConfig) *Server {
 	svr := &Server{
 		config:      config,
 		connManager: connmanager.New(),
+		SendStat:    actpersec.New(),
+		RecvStat:    actpersec.New(),
 	}
 	svr.sendRecvStop = func() {
 		fmt.Printf("Too early sendRecvStop call\n")
@@ -225,9 +228,22 @@ func (svr *Server) serveTCPClient(ctx context.Context, conn *net.TCPConn) {
 ///////////////////////////////////////////////////////////////
 
 func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
+	svr.RecvStat.Inc()
+	switch flowtype.FlowType(pk.Header.FlowType) {
+	default:
+		return fmt.Errorf("Invalid packet type %v", pk.Header)
+	case flowtype.Request:
+	}
 	return nil
 }
 func (svr *Server) handleSentPacketFn(me interface{}, pk *packet.Packet) error {
+	svr.SendStat.Inc()
+	switch flowtype.FlowType(pk.Header.FlowType) {
+	default:
+		return fmt.Errorf("Invalid packet type %v", pk.Header)
+	case flowtype.Notification:
+	case flowtype.Response:
+	}
 	return nil
 }
 

@@ -222,6 +222,16 @@ func (app *App) reqEcho() error {
 }
 
 func (app *App) handleSentPacket(pk *packet.Packet) error {
+	switch flowtype.FlowType(pk.Header.FlowType) {
+	default:
+		return fmt.Errorf("Invalid packet type %v", pk.Header)
+
+	case flowtype.Request:
+		// process response
+		if err := app.pid2recv.HandleRsp(pk); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
