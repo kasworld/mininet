@@ -8,6 +8,7 @@ type CommandID uint16
 
 const (
 	Invalid CommandID = iota // make empty packet error
+	Echo                     // simple echo
 	//
 
 	CommandID_Count int = iota
@@ -15,6 +16,7 @@ const (
 
 var _CommandID2string = [CommandID_Count][2]string{
 	Invalid: {"Invalid", "make empty packet error"},
+	Echo:    {"Echo", "simple echo"},
 }
 
 func (e CommandID) String() string {
@@ -33,6 +35,7 @@ func (e CommandID) CommentString() string {
 
 var _string2CommandID = map[string]CommandID{
 	"Invalid": Invalid,
+	"Echo":    Echo,
 }
 
 func String2CommandID(s string) (CommandID, bool) {

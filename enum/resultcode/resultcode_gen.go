@@ -7,14 +7,15 @@ import "fmt"
 type ResultCode uint16
 
 const (
-	None ResultCode = iota // or success
-	//
+	None        ResultCode = iota // or success
+	GeneralFail                   //
 
 	ResultCode_Count int = iota
 )
 
 var _ResultCode2string = [ResultCode_Count][2]string{
-	None: {"None", "or success"},
+	None:        {"None", "or success"},
+	GeneralFail: {"GeneralFail", ""},
 }
 
 func (e ResultCode) String() string {
@@ -32,7 +33,8 @@ func (e ResultCode) CommentString() string {
 }
 
 var _string2ResultCode = map[string]ResultCode{
-	"None": None,
+	"None":        None,
+	"GeneralFail": GeneralFail,
 }
 
 func String2ResultCode(s string) (ResultCode, bool) {

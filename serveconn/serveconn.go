@@ -102,7 +102,7 @@ loop:
 	return returnerr
 }
 
-func (scb *ServeConn) StartServeWS(
+func (scb *ServeConn) ServeWS(
 	mainctx context.Context, conn *websocket.Conn,
 	readTimeoutSec, writeTimeoutSec time.Duration,
 	handleRecvPacketFn func(me interface{}, pk *packet.Packet) error,
