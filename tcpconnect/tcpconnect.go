@@ -26,24 +26,11 @@ type Connection struct {
 	conn         *net.TCPConn
 	sendCh       chan *packet.Packet
 	sendRecvStop func()
-
-	readTimeoutSec     time.Duration
-	writeTimeoutSec    time.Duration
-	handleRecvPacketFn func(pk *packet.Packet) error
-	handleSentPacketFn func(pk *packet.Packet) error
 }
 
-func New(
-	readTimeoutSec, writeTimeoutSec time.Duration,
-	handleRecvPacketFn func(pk *packet.Packet) error,
-	handleSentPacketFn func(pk *packet.Packet) error,
-) *Connection {
+func New(sendBufferSize int) *Connection {
 	tc := &Connection{
-		sendCh:             make(chan *packet.Packet, 10),
-		readTimeoutSec:     readTimeoutSec,
-		writeTimeoutSec:    writeTimeoutSec,
-		handleRecvPacketFn: handleRecvPacketFn,
-		handleSentPacketFn: handleSentPacketFn,
+		sendCh: make(chan *packet.Packet, sendBufferSize),
 	}
 
 	tc.sendRecvStop = func() {
@@ -71,7 +58,12 @@ func (tc *Connection) Cleanup() {
 	}
 }
 
-func (tc *Connection) Run(mainctx context.Context) error {
+func (tc *Connection) Run(
+	mainctx context.Context,
+	readTimeoutSec, writeTimeoutSec time.Duration,
+	handleRecvPacketFn func(pk *packet.Packet) error,
+	handleSentPacketFn func(pk *packet.Packet) error,
+) error {
 	sendRecvCtx, sendRecvCancel := context.WithCancel(mainctx)
 	tc.sendRecvStop = sendRecvCancel
 	var rtnerr error
@@ -83,8 +75,8 @@ func (tc *Connection) Run(mainctx context.Context) error {
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,
-			tc.readTimeoutSec,
-			tc.handleRecvPacketFn)
+			readTimeoutSec,
+			handleRecvPacketFn)
 		if err != nil {
 			rtnerr = err
 		}
@@ -95,9 +87,9 @@ func (tc *Connection) Run(mainctx context.Context) error {
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,
-			tc.writeTimeoutSec,
+			writeTimeoutSec,
 			tc.sendCh,
-			tc.handleSentPacketFn)
+			handleSentPacketFn)
 		if err != nil {
 			rtnerr = err
 		}
