@@ -171,9 +171,7 @@ func (app *App) Run(mainctx context.Context) {
 }
 
 func (app *App) connectWS(ctx context.Context) {
-	app.c2scWS = gorillaconnect.New(
-		sendBufferSize,
-	)
+	app.c2scWS = gorillaconnect.New(sendBufferSize)
 	if err := app.c2scWS.ConnectTo(app.config.ConnectToServer); err != nil {
 		app.runResult = err
 		fmt.Printf("%v\n", err)
@@ -222,20 +220,25 @@ func (app *App) reqEcho() error {
 }
 
 func (app *App) handleSentPacket(pk *packet.Packet) error {
+	fmt.Printf("Send %v\n", pk.Header)
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
 		return fmt.Errorf("Invalid packet type %v", pk.Header)
 
 	case flowtype.Request:
 		// process response
-		if err := app.pid2recv.HandleRsp(pk); err != nil {
+		if rspfn, err := app.pid2recv.GetRspFn(pk.Header.PacketID); err != nil {
+			fmt.Printf("HandleRsp %v %v\n", err, pk.Header)
 			return err
+		} else {
+			return rspfn(pk)
 		}
 	}
 	return nil
 }
 
 func (app *App) handleRecvPacket(pk *packet.Packet) error {
+	fmt.Printf("Recv %v\n", pk.Header)
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
 		return fmt.Errorf("Invalid packet type %v", pk.Header)
@@ -245,8 +248,11 @@ func (app *App) handleRecvPacket(pk *packet.Packet) error {
 
 	case flowtype.Response:
 		// process response
-		if err := app.pid2recv.HandleRsp(pk); err != nil {
+		if rspfn, err := app.pid2recv.GetRspFn(pk.Header.PacketID); err != nil {
+			fmt.Printf("GetRspFn %v %v\n", err, pk.Header)
 			return err
+		} else {
+			return rspfn(pk)
 		}
 	}
 	return nil
@@ -257,8 +263,9 @@ func (app *App) ReqWithRspFn(
 	fn packetid2rspfn.HandleRspFn) error {
 
 	pid := app.pid2recv.NewPID(fn)
-	bodybytes, _, err := marshalBodyFn(body, nil)
+	bodybytes, err := marshalBodyFn(body)
 	if err != nil {
+		fmt.Printf("%v\n", err)
 		return err
 	}
 	spk := &packet.Packet{
@@ -279,11 +286,11 @@ func (app *App) ReqWithRspFn(
 	return nil
 }
 
-func marshalBodyFn(body interface{}, oldBuffToAppend []byte) ([]byte, byte, error) {
-	network := bytes.NewBuffer(oldBuffToAppend)
-	enc := gob.NewEncoder(network)
+func marshalBodyFn(body interface{}) ([]byte, error) {
+	var network bytes.Buffer
+	enc := gob.NewEncoder(&network)
 	err := enc.Encode(body)
-	return network.Bytes(), 0, err
+	return network.Bytes(), err
 }
 
 func unmarshal_ReqEcho(pk *packet.Packet) (interface{}, error) {

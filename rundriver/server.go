@@ -228,6 +228,7 @@ func (svr *Server) serveTCPClient(ctx context.Context, conn *net.TCPConn) {
 ///////////////////////////////////////////////////////////////
 
 func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
+	fmt.Printf("Recv %v\n", pk.Header)
 	svr.RecvStat.Inc()
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
@@ -240,7 +241,7 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 			fmt.Printf("%v\n", err)
 			return err
 		}
-		bodybytes, _, err := marshalBodyFn(body, nil)
+		bodybytes, err := marshalBodyFn(body)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			return err
@@ -261,6 +262,7 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 	return nil
 }
 func (svr *Server) handleSentPacketFn(me interface{}, pk *packet.Packet) error {
+	fmt.Printf("Send %v\n", pk.Header)
 	svr.SendStat.Inc()
 	switch flowtype.FlowType(pk.Header.FlowType) {
 	default:
@@ -271,11 +273,11 @@ func (svr *Server) handleSentPacketFn(me interface{}, pk *packet.Packet) error {
 	return nil
 }
 
-func marshalBodyFn(body interface{}, oldBuffToAppend []byte) ([]byte, byte, error) {
-	network := bytes.NewBuffer(oldBuffToAppend)
-	enc := gob.NewEncoder(network)
+func marshalBodyFn(body interface{}) ([]byte, error) {
+	var network bytes.Buffer
+	enc := gob.NewEncoder(&network)
 	err := enc.Encode(body)
-	return network.Bytes(), 0, err
+	return network.Bytes(), err
 }
 
 func unmarshal_ReqEcho(pk *packet.Packet) (interface{}, error) {
@@ -308,7 +310,8 @@ func (svr *Server) bytesAPIFn_ReqEcho(
 	}
 	_ = recvBody
 
-	pk.Header.ResultCode = uint16(resultcode.None)
+	shd := pk.Header
+	shd.ResultCode = uint16(resultcode.None)
 	sendBody := &netobj.RspEcho_data{recvBody.Msg}
-	return pk.Header, sendBody, nil
+	return shd, sendBody, nil
 }

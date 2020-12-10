@@ -38,13 +38,13 @@ func (p2r *PID2RspFn) NewPID(fn HandleRspFn) uint32 {
 	p2r.pid2recvfn[p2r.pid] = fn
 	return p2r.pid
 }
-func (p2r *PID2RspFn) HandleRsp(pk *packet.Packet) error {
+func (p2r *PID2RspFn) GetRspFn(pid uint32) (HandleRspFn, error) {
 	p2r.mutex.Lock()
-	if recvfn, exist := p2r.pid2recvfn[pk.Header.PacketID]; exist {
-		delete(p2r.pid2recvfn, pk.Header.PacketID)
+	if recvfn, exist := p2r.pid2recvfn[pid]; exist {
+		delete(p2r.pid2recvfn, pid)
 		p2r.mutex.Unlock()
-		return recvfn(pk)
+		return recvfn, nil
 	}
 	p2r.mutex.Unlock()
-	return fmt.Errorf("pid not found")
+	return nil, fmt.Errorf("pid not found")
 }
