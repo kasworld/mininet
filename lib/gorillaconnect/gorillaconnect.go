@@ -9,21 +9,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tcpconnect
+package gorillaconnect
 
 import (
 	"context"
 	"fmt"
-	"net"
+	"net/url"
 	"sync"
 	"time"
 
-	"github.com/kasworld/mininet/packet"
-	"github.com/kasworld/mininet/tcploop"
+	"github.com/gorilla/websocket"
+	"github.com/kasworld/mininet/lib/gorillaloop"
+	"github.com/kasworld/mininet/lib/packet"
 )
 
 type Connection struct {
-	conn         *net.TCPConn
+	conn         *websocket.Conn
 	sendCh       chan *packet.Packet
 	sendRecvStop func()
 }
@@ -39,12 +40,10 @@ func New(sendBufferSize int) *Connection {
 	return tc
 }
 
-func (tc *Connection) ConnectTo(remoteAddr string) error {
-	tcpaddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
-	if err != nil {
-		return err
-	}
-	tc.conn, err = net.DialTCP("tcp", nil, tcpaddr)
+func (tc *Connection) ConnectTo(connAddr string) error {
+	u := url.URL{Scheme: "ws", Host: connAddr, Path: "/ws"}
+	var err error
+	tc.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -71,7 +70,7 @@ func (tc *Connection) Run(
 	sendRecvWaitGroup.Add(2)
 	go func() {
 		defer sendRecvWaitGroup.Done()
-		err := tcploop.RecvLoop(
+		err := gorillaloop.RecvLoop(
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,
@@ -83,7 +82,7 @@ func (tc *Connection) Run(
 	}()
 	go func() {
 		defer sendRecvWaitGroup.Done()
-		err := tcploop.SendLoop(
+		err := gorillaloop.SendLoop(
 			sendRecvCtx,
 			tc.sendRecvStop,
 			tc.conn,

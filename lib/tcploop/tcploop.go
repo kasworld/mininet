@@ -16,7 +16,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/kasworld/mininet/packet"
+	"github.com/kasworld/mininet/lib/packet"
 )
 
 func SendLoop(

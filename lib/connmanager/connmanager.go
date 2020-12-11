@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/kasworld/mininet/serveconn"
+	"github.com/kasworld/mininet/lib/serveconn"
 )
 
 type Manager struct {

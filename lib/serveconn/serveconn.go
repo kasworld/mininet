@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/kasworld/mininet/gorillaloop"
-	"github.com/kasworld/mininet/packet"
-	"github.com/kasworld/mininet/tcploop"
+	"github.com/kasworld/mininet/lib/gorillaloop"
+	"github.com/kasworld/mininet/lib/packet"
+	"github.com/kasworld/mininet/lib/tcploop"
 )
 
 func (scb *ServeConn) String() string {

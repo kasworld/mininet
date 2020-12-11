@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/kasworld/mininet/header"
+	"github.com/kasworld/mininet/lib/header"
 )
 
 type Packet struct {

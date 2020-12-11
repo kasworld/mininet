@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/kasworld/mininet/packet"
+	"github.com/kasworld/mininet/lib/packet"
 )
 
 type HandleRspFn func(pk *packet.Packet) error

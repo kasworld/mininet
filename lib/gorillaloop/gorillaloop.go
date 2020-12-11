@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/kasworld/mininet/packet"
+	"github.com/kasworld/mininet/lib/packet"
 )
 
 func SendControl(

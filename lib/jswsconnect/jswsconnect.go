@@ -17,7 +17,7 @@ import (
 	"sync"
 	"syscall/js"
 
-	"github.com/kasworld/mininet/packet"
+	"github.com/kasworld/mininet/lib/packet"
 )
 
 type Connection struct {

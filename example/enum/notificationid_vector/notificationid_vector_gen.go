@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/kasworld/mininet/enum/notificationid"
+	"github.com/kasworld/mininet/example/enum/notificationid"
 )
 
 type NotificationIDVector [notificationid.NotificationID_Count]int

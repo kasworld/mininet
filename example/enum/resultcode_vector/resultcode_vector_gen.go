@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/kasworld/mininet/enum/resultcode"
+	"github.com/kasworld/mininet/example/enum/resultcode"
 )
 
 type ResultCodeVector [resultcode.ResultCode_Count]int
