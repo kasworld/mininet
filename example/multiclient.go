@@ -252,7 +252,7 @@ func (app *App) ReqWithRspFn(
 	fn packetid2rspfn.HandleRspFn) error {
 
 	pid := app.pid2recv.NewPID(fn)
-	bodybytes, err := netobj.MarshalBody_msgp(body)
+	bodybytes, _, err := netobj.MarshalBody_msgp(body, nil)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return err

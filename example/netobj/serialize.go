@@ -19,15 +19,16 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-func MarshalBody_gob(body interface{}) ([]byte, error) {
-	var network bytes.Buffer
-	enc := gob.NewEncoder(&network)
+func MarshalBody_gob(body interface{}, oldBuffToAppend []byte) ([]byte, byte, error) {
+	network := bytes.NewBuffer(oldBuffToAppend)
+	enc := gob.NewEncoder(network)
 	err := enc.Encode(body)
-	return network.Bytes(), err
+	return network.Bytes(), 0, err
 }
 
-func MarshalBody_msgp(body interface{}) ([]byte, error) {
-	return body.(msgp.Marshaler).MarshalMsg(nil)
+func MarshalBody_msgp(body interface{}, oldBuffToAppend []byte) ([]byte, byte, error) {
+	newBuffer, err := body.(msgp.Marshaler).MarshalMsg(oldBuffToAppend)
+	return newBuffer, 0, err
 }
 
 func Unmarshal_ReqEcho_gob(pk *packet.Packet) (interface{}, error) {

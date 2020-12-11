@@ -238,7 +238,7 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 			fmt.Printf("%v\n", err)
 			return err
 		}
-		bodybytes, err := netobj.MarshalBody_msgp(body)
+		bodybytes, _, err := netobj.MarshalBody_msgp(body, nil)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			return err
