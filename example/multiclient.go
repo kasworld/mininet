@@ -12,9 +12,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"flag"
 	"fmt"
 	"time"
@@ -254,7 +252,7 @@ func (app *App) ReqWithRspFn(
 	fn packetid2rspfn.HandleRspFn) error {
 
 	pid := app.pid2recv.NewPID(fn)
-	bodybytes, err := marshalBodyFn(body)
+	bodybytes, err := netobj.MarshalBody_msgp(body)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return err
@@ -275,19 +273,4 @@ func (app *App) ReqWithRspFn(
 		return fmt.Errorf("Send fail %v %v", app, err)
 	}
 	return nil
-}
-
-func marshalBodyFn(body interface{}) ([]byte, error) {
-	var network bytes.Buffer
-	enc := gob.NewEncoder(&network)
-	err := enc.Encode(body)
-	return network.Bytes(), err
-}
-
-func unmarshal_ReqEcho(pk *packet.Packet) (interface{}, error) {
-	var args netobj.ReqEcho_data
-	network := bytes.NewBuffer(pk.Body)
-	dec := gob.NewDecoder(network)
-	err := dec.Decode(&args)
-	return &args, err
 }

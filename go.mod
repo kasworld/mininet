@@ -10,4 +10,5 @@ require (
 	github.com/kasworld/prettystring v0.0.0-20200313054137-8305061037e7
 	github.com/kasworld/rangestat v0.0.0-20190508031937-d4380fb43f7a
 	github.com/kasworld/weblib v0.0.0-20200408024824-4b4f01a6be3f // indirect
+	github.com/tinylib/msgp v1.1.5
 )

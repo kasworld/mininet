@@ -12,9 +12,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"flag"
 	"fmt"
 	"net"
@@ -240,7 +238,7 @@ func (svr *Server) handleRecvPacketFn(me interface{}, pk *packet.Packet) error {
 			fmt.Printf("%v\n", err)
 			return err
 		}
-		bodybytes, err := marshalBodyFn(body)
+		bodybytes, err := netobj.MarshalBody_msgp(body)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			return err
@@ -271,21 +269,6 @@ func (svr *Server) handleSentPacketFn(me interface{}, pk *packet.Packet) error {
 	return nil
 }
 
-func marshalBodyFn(body interface{}) ([]byte, error) {
-	var network bytes.Buffer
-	enc := gob.NewEncoder(&network)
-	err := enc.Encode(body)
-	return network.Bytes(), err
-}
-
-func unmarshal_ReqEcho(pk *packet.Packet) (interface{}, error) {
-	var args netobj.ReqEcho_data
-	network := bytes.NewBuffer(pk.Body)
-	dec := gob.NewDecoder(network)
-	err := dec.Decode(&args)
-	return &args, err
-}
-
 ///////////////////////////////////////////////////////////////
 
 func (svr *Server) bytesAPIFn_ReqInvalid(
@@ -298,7 +281,7 @@ func (svr *Server) bytesAPIFn_ReqEcho(
 	me interface{}, pk *packet.Packet) (
 	header.Header, interface{}, error) {
 
-	robj, err := unmarshal_ReqEcho(pk)
+	robj, err := netobj.Unmarshal_ReqEcho_msgp(pk)
 	if err != nil {
 		return pk.Header, nil, fmt.Errorf("unmarshal_ReqEcho %v", err)
 	}

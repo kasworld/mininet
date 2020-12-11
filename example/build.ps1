@@ -9,3 +9,5 @@ genenum -typesize=uint16 -typename=ResultCode -packagename=resultcode -basedir=e
 
 goimports -w enum
 
+################################################################################
+msgp -file netobj/netobj.go -o netobj/netobj_gen.go -tests=0 
